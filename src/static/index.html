@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validador de Documentos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Header -->
+        <header class="bg-primary text-white py-4 mb-4">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h1 class="mb-0">
+                            <i class="fas fa-file-check me-2"></i>
+                            Validador de Comprovantes de Vínculo
+                        </h1>
+                        <p class="mb-0 opacity-75"> By Divas do Sucesso do Associado</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="container">
+            <!-- Seção 1: Configuração da Planilha -->
+            <div class="card mb-4" id="secao-planilha">
+                <div class="card-header bg-light">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-table me-2 text-success"></i>
+                        1. Configuração da Planilha
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <label for="csv-url" class="form-label">URL da Planilha Google (formato CSV)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-link"></i>
+                                </span>
+                                <input type="url" class="form-control" id="csv-url" 
+                                       placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv">
+                                <button class="btn btn-success" type="button" id="carregar-planilha">
+                                    <i class="fas fa-download me-1"></i>
+                                    Carregar Planilha
+                                </button>
+                            </div>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Cole aqui o link de exportação CSV da sua planilha Google
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div id="status-planilha" class="alert alert-secondary">
+                                <i class="fas fa-clock me-1"></i>
+                                Aguardando planilha...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção 2: Upload de Documentos -->
+            <div class="card mb-4" id="secao-documentos">
+                <div class="card-header bg-light">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-file-upload me-2 text-info"></i>
+                        2. Documentos para Validação
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <label for="document-urls" class="form-label">URLs dos Documentos (máximo 3)</label>
+                            <textarea class="form-control" id="document-urls" rows="4" 
+                                      placeholder="Cole aqui as URLs dos documentos (PDF ou HTML), uma por linha ou separadas por vírgula"></textarea>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Suporte para documentos PDF e HTML acessíveis via URL
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary btn-lg" id="iniciar-validacao" disabled>
+                                    <i class="fas fa-play me-2"></i>
+                                    Iniciar Validação
+                                </button>
+                                <small class="text-muted text-center">
+                                    <i class="fas fa-shield-alt me-1"></i>
+                                    Processamento seguro e privado
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção 3: Progresso -->
+            <div class="card mb-4" id="secao-progresso" style="display: none;">
+                <div class="card-header bg-light">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-cogs me-2 text-warning"></i>
+                        3. Processamento
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="progress mb-3">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" id="progress-bar" style="width: 0%"></div>
+                    </div>
+                    <div id="log-processamento" class="bg-dark text-light p-3 rounded" style="height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.9em;">
+                        <div class="text-success">Sistema iniciado. Aguardando processamento...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção 4: Resultados -->
+            <div class="card mb-4" id="secao-resultados" style="display: none;">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2 text-primary"></i>
+                        4. Resultados da Validação
+                    </h3>
+                    <button class="btn btn-outline-primary btn-sm" id="download-relatorio">
+                        <i class="fas fa-download me-1"></i>
+                        Baixar Relatório
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="resultados-container">
+                        <!-- Resultados serão inseridos aqui dinamicamente -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="bg-light text-center py-4 mt-5">
+            <div class="container">
+                <p class="text-muted mb-0">
+                    <i class="fas fa-code me-1"></i>
+                    Sucesso do Associado - Febrafar
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modal de Ajuda -->
+    <div class="modal fade" id="modal-ajuda" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-question-circle me-2"></i>
+                        Como usar o Validador
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-table text-success me-2"></i>Planilha Google</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Coluna C:</strong> CNPJs</li>
+                                <li><strong>Coluna D:</strong> Razões Sociais</li>
+                                <li><strong>Coluna K:</strong> Representantes</li>
+                                <li><strong>Coluna L:</strong> Responsáveis Rede</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-file text-info me-2"></i>Documentos</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Formatos:</strong> PDF e HTML</li>
+                                <li><strong>Máximo:</strong> 3 documentos</li>
+                                <li><strong>Acesso:</strong> URLs públicas</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <hr>
+                    <h6><i class="fas fa-check-circle text-primary me-2"></i>Validações Realizadas</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li>✅ CNPJ na planilha</li>
+                                <li>✅ Razão social na Receita</li>
+                                <li>✅ Situação cadastral ativa</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li>✅ Representante legal</li>
+                                <li>✅ Nomes específicos</li>
+                                <li>✅ Data dentro de 30 dias</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botão de Ajuda Flutuante -->
+    <button class="btn btn-primary btn-floating" data-bs-toggle="modal" data-bs-target="#modal-ajuda">
+        <i class="fas fa-question"></i>
+    </button>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
