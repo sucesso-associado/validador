@@ -1,4 +1,3 @@
-// Validador de Documentos - JavaScript
 class ValidadorDocumentos {
     constructor() {
         this.planilhaData = null;
@@ -8,15 +7,11 @@ class ValidadorDocumentos {
 
     init() {
         this.bindEvents();
-        this.updateUI();
+        // Dispara o carregamento automático da planilha ao iniciar a página
+        this.carregarPlanilha();
     }
 
     bindEvents() {
-        // Carregar planilha
-        document.getElementById('carregar-planilha').addEventListener('click', () => {
-            this.carregarPlanilha();
-        });
-
         // Iniciar validação
         document.getElementById('iniciar-validacao').addEventListener('click', () => {
             this.iniciarValidacao();
@@ -27,39 +22,27 @@ class ValidadorDocumentos {
             this.downloadRelatorio();
         });
 
-        // Monitorar mudanças nos campos
-        document.getElementById('csv-url').addEventListener('input', () => {
-            this.updateUI();
-        });
-
+        // Monitorar mudanças nas URLs
         document.getElementById('document-urls').addEventListener('input', () => {
             this.updateUI();
         });
     }
 
     updateUI() {
-        const csvUrl = document.getElementById('csv-url').value.trim();
         const documentUrls = document.getElementById('document-urls').value.trim();
         const iniciarBtn = document.getElementById('iniciar-validacao');
 
         // Habilitar botão de validação apenas se planilha carregada e URLs fornecidas
-        iniciarBtn.disabled = !this.planilhaData || !documentUrls;
+        if(iniciarBtn) {
+            iniciarBtn.disabled = !this.planilhaData || !documentUrls;
+        }
     }
 
     async carregarPlanilha() {
-        const csvUrl = document.getElementById('csv-url').value.trim();
         const statusElement = document.getElementById('status-planilha');
-        const carregarBtn = document.getElementById('carregar-planilha');
-
-        if (!csvUrl) {
-            this.showAlert(statusElement, 'danger', 'Por favor, insira a URL da planilha');
-            return;
-        }
-
-        // Mostrar loading
-        carregarBtn.disabled = true;
-        carregarBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Carregando...';
-        this.showAlert(statusElement, 'info', 'Carregando planilha...');
+        
+        // Mostrar status de loading automático
+        this.showAlert(statusElement, 'info', '<i class="fas fa-spinner fa-spin me-1"></i> Sincronizando com a base de dados (Google Sheets)...');
 
         try {
             const response = await fetch('/api/carregar-planilha', {
@@ -67,7 +50,7 @@ class ValidadorDocumentos {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ csv_url: csvUrl })
+                body: JSON.stringify({}) // Backend agora tem a URL fixa
             });
 
             const data = await response.json();
@@ -77,11 +60,8 @@ class ValidadorDocumentos {
                 const { dados } = data;
                 
                 this.showAlert(statusElement, 'success', 
-                    `✅ Planilha carregada com sucesso!<br>
-                     📊 ${dados.razoes_sociais} razões sociais<br>
-                     🏢 ${dados.cnpjs} CNPJs<br>
-                     👤 ${dados.representantes} representantes<br>
-                     👥 ${dados.responsaveis_rede} responsáveis rede`
+                    `✅ Base de dados sincronizada com sucesso!<br>
+                     📊 ${dados.razoes_sociais} razões sociais | 🏢 ${dados.cnpjs} CNPJs | 👤 ${dados.representantes} representantes`
                 );
                 
                 this.updateUI();
@@ -91,11 +71,9 @@ class ValidadorDocumentos {
 
         } catch (error) {
             console.error('Erro ao carregar planilha:', error);
-            this.showAlert(statusElement, 'danger', `❌ Erro: ${error.message}`);
+            this.showAlert(statusElement, 'danger', `❌ Erro ao conectar com base de dados: ${error.message}`);
             this.planilhaData = null;
         } finally {
-            carregarBtn.disabled = false;
-            carregarBtn.innerHTML = '<i class="fas fa-download me-1"></i>Carregar Planilha';
             this.updateUI();
         }
     }
@@ -109,7 +87,7 @@ class ValidadorDocumentos {
         }
 
         if (documentUrls.length > 3) {
-            alert('Máximo de 3 documentos permitidos');
+            alert('Máximo de 3 documentos permitidos simultaneamente devido ao limite da Receita Federal.');
             return;
         }
 
@@ -139,7 +117,7 @@ class ValidadorDocumentos {
                 })
             });
 
-            this.updateProgress(60, 'Processando documentos...');
+            this.updateProgress(60, 'Processando documentos e consultando Receita Federal...');
 
             const data = await response.json();
 
@@ -166,12 +144,9 @@ class ValidadorDocumentos {
         const text = document.getElementById('document-urls').value.trim();
         if (!text) return [];
 
-        // Separar por vírgula ou quebra de linha
-        const urls = text.split(/[,\n]/)
+        return text.split(/[,\n]/)
             .map(url => url.trim())
             .filter(url => url.length > 0);
-
-        return urls;
     }
 
     updateProgress(percentage, message) {
@@ -198,10 +173,8 @@ class ValidadorDocumentos {
         const container = document.getElementById('resultados-container');
         container.innerHTML = '';
 
-        // Mostrar seção de resultados
         document.getElementById('secao-resultados').style.display = 'block';
 
-        // Estatísticas gerais
         const validos = this.resultados.filter(r => r.status === 'valido').length;
         const invalidos = this.resultados.filter(r => r.status === 'invalido').length;
         const erros = this.resultados.filter(r => r.status === 'erro').length;
@@ -237,7 +210,6 @@ class ValidadorDocumentos {
 
         container.innerHTML = statsHtml;
 
-        // Resultados individuais
         this.resultados.forEach((resultado, index) => {
             const cardHtml = this.criarCardResultado(resultado, index + 1);
             container.innerHTML += cardHtml;
@@ -265,7 +237,6 @@ class ValidadorDocumentos {
                 </div>
             `;
         } else {
-            // Dados extraídos
             const dados = resultado.dados_extraidos || {};
             const receita = resultado.dados_receita || {};
             const validacoes = resultado.validacoes || {};
@@ -286,6 +257,8 @@ class ValidadorDocumentos {
                         <table class="table table-sm table-dados">
                             <tr><td><strong>Razão Social:</strong></td><td>${receita.razao_social || 'Não consultado'}</td></tr>
                             <tr><td><strong>Situação:</strong></td><td>${receita.situacao_cadastral || 'Não consultado'}</td></tr>
+                            <tr><td><strong>CNAE:</strong></td><td>${receita.cnae || 'Não consultado'}</td></tr>
+                            <tr><td><strong>Atividade:</strong></td><td>${receita.atividade_principal || 'Não consultado'}</td></tr>
                             <tr><td><strong>Endereço:</strong></td><td>${receita.logradouro || 'Não consultado'}</td></tr>
                         </table>
                     </div>
@@ -347,7 +320,6 @@ class ValidadorDocumentos {
             return;
         }
 
-        // Criar relatório em formato JSON para download
         const relatorio = {
             timestamp: new Date().toISOString(),
             total_documentos: this.resultados.length,
@@ -372,21 +344,11 @@ class ValidadorDocumentos {
     }
 
     showAlert(element, type, message) {
-        element.className = `alert alert-${type}`;
+        element.className = `alert alert-${type} mt-2`;
         element.innerHTML = `<i class="fas fa-${type === 'success' ? 'check' : type === 'danger' ? 'times' : 'info'}-circle me-1"></i>${message}`;
     }
 }
 
-// Inicializar aplicação quando DOM estiver carregado
 document.addEventListener('DOMContentLoaded', () => {
     new ValidadorDocumentos();
 });
-
-// Adicionar tooltips do Bootstrap
-document.addEventListener('DOMContentLoaded', function() {
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-});
-
